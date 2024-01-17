@@ -40,21 +40,27 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
+// get user by name
+
 app.get('/users', (req, res) => {
     const name = req.query.name;
-    if (name != undefined){
-        let result = findUserByName(name);
-        result = {users_list: result};
-        res.send(result);
+    const job = req.query.job;
+    let result = users['users_list'];
+
+    if (name || job) {
+        result = findUsersByCriteria(name, job);
     }
-    else{
-        res.send(users);
-    }
+
+    res.send({ users_list: result });
 });
 
-const findUserByName = (name) => { 
-    return users['users_list'].filter( (user) => user['name'] === name); 
-}
+const findUsersByCriteria = (name, job) => {
+    return users['users_list'].filter(user => {
+        return (!name || user.name === name) && (!job || user.job === job);
+    });
+};
+
+// get user by id
 
 app.get('/users/:id', (req, res) => {
     const id = req.params['id']; //or req.params.id
@@ -72,6 +78,9 @@ function findUserById(id) {
     //return users['users_list'].filter( (user) => user['id'] === id);
 }
 
+// add user (USE BOOMERANG TO MAKE THE POST CALL)
+// https://app.boomerangapi.com
+
 app.post('/users', (req, res) => {
     const userToAdd = req.body;
     addUser(userToAdd);
@@ -80,6 +89,24 @@ app.post('/users', (req, res) => {
 
 function addUser(user){
     users['users_list'].push(user);
+}
+
+// delete a user
+
+app.delete('/users/:id', (req, res) => {
+    const id = req.params.id;
+    const isDeleted = deleteUserById(id);
+    if (isDeleted) {
+        res.status(200).send(`User with id ${id} was deleted.`);
+    } else {
+        res.status(404).send('User not found.');
+    }
+});
+
+function deleteUserById(id) {
+    const initialLength = users['users_list'].length;
+    users['users_list'] = users['users_list'].filter(user => user.id !== id);
+    return initialLength !== users['users_list'].length;
 }
 
 app.listen(port, () => {
